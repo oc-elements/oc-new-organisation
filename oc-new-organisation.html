@@ -46,10 +46,14 @@
         background-color: var(--default-primary-color);
         color: var(--text-primary-color);
       }
-      .toast-hide-button {
-        color: #eeff41;
-        margin: 10px;
-        cursor: pointer;
+      paper-input,
+      paper-dropdown-menu {
+        max-width: 350px;
+        width: 100%;
+      }
+      oc-organisation-types,
+      oc-organisation-industries{
+        max-width: 250px;
       }
     </style>
 
@@ -70,14 +74,9 @@
       <oc-organisation-types selected-types="{{_organisationTypes}}"></oc-organisation-types>
       <oc-organisation-industries selected-industries="{{_industries}}"></oc-organisation-industries>
 
-      <paper-button raised on-tap="save">Create</paper-button>
+      <paper-button id="saveButton" raised on-tap="save">Create</paper-button>
 
     </form>
-
-    <paper-toast id="toast"></paper-toast>
-    <paper-toast id="errorToast" duration="8000">
-      <span class="toast-hide-button" role="button" tabindex="0" on-tap="_hideErrorToast">OK</span>
-    </paper-toast>
 
     <oc-organisation-api id="organisationApi"></oc-organisation-api>
   </template>
@@ -192,38 +191,36 @@
           return;
         }
 
+        this.$.saveButton.disabled = true;
+
         var formData = this.$.form.serialize();
 
         this.$.organisationApi.createOrganisation(
-            {
-              name: formData.name,
-              code: formData.code,
-              types: this._organisationTypes.map(function(type) {
-                return type.id;
-              }),
-              timezoneOffset: this.$.timezone.selectedItem.timezoneOffset,
-              industry: this._industries.map(function (industry) {
-                return industry.id;
-              })
-            })
-            .then(this._handleCreateResponse.bind(this))
-            .catch(this._handleCreateFailed.bind(this))
+                {
+                  name: formData.name,
+                  code: formData.code,
+                  types: this._organisationTypes.map(function(type) {
+                    return type.id;
+                  }),
+                  timezoneOffset: this.$.timezone.selectedItem.timezoneOffset,
+                  industry: this._industries.map(function (industry) {
+                    return industry.id;
+                  })
+                })
+                .then(this._handleCreateResponse.bind(this))
+                .catch(this._handleCreateFailed.bind(this))
       },
 
       _handleCreateResponse: function(ironRequest) {
         var location = ironRequest.xhr.getResponseHeader('Location'),
                 organisationId = location.split('/').pop();
-        this.$.toast.show('Success! Organisation created');
         this.$.form.reset();
-        this.fire('organisation-created', {organisationId: organisationId});
+        this.fire('created', { organisationId: organisationId });
+        this.$.saveButton.disabled = false;
       },
 
       _handleCreateFailed: function(error) {
-        this.$.toast.show(error || 'Error: Failed to create organisation');
-      },
-
-      _hideErrorToast: function() {
-        this.$.errorToast.hide();
+        this.fire('error', error);
       },
 
       _transformToArray: function(variable) {
